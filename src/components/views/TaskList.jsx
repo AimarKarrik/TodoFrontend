@@ -15,81 +15,98 @@ export default function TaskList() {
     }
     useEffect(() => {
         if (!token) return;
-        fetch("http://demo2.z-bit.ee/tasks", {
+        fetch("http://localhost:3001/api/tasks", {
             method: "GET",
             headers: {
                 "Content-Type": "application/json",
-                'Authorization': 'Bearer ' + token
+                "token": token
             }
         })
             .then(response => response.json())
-            .then(data => { setTasks(data); console.log(data); })
+            .then(data => { setTasks(data.tasks); console.log(data); })
     }, []);
 
 
-    const handleNameChange = (task, event) => {
+    const handleSaveTask = (task, event) => {
         console.log(event)
-        const newTasks = produce(tasks, draft => {
+
+        produce(tasks, draft => {
             const index = draft.findIndex(t => t.id === task.id);
-            draft[index].title = event.target.value;
-            fetch('http://demo2.z-bit.ee/tasks/' + task.id, {
+            fetch('http://localhost:3001/api/tasks', {
                 method: "PUT",
                 body: JSON.stringify(draft[index]),
                 headers: {
                     "content-Type": "application/json",
-                    'Authorization': 'Bearer ' + token
+                    "token": token
                 }
             })
-                .then(response => response.json())
-                .then(data => { console.log(data); })
+            .then(response => response.json())
+            .then(data => { console.log(data); })
         });
-        setTasks(newTasks);
-    };
-
-    const handleMarkedAsDoneChange = (task, event) => {
-        console.log(event)
-        const newTasks = produce(tasks, draft => {
-            const index = draft.findIndex(t => t.id === task.id);
-            draft[index].marked_as_done = event.target.checked;
-
-            fetch('http://demo2.z-bit.ee/tasks/' + task.id, {
-                method: "PUT",
-                body: JSON.stringify(draft[index]),
-                headers: {
-                    "content-Type": "application/json",
-                    'Authorization': 'Bearer ' + token
-                }
-            })
-                .then(response => response.json())
-                .then(data => { console.log(data); })
-        });
-        setTasks(newTasks);
     };
 
     const handleAddTask = () => {
         const newTask = {
-            title: "New task",
-            marked_as_done: false
+            task: "New task"
+        }
+
+        try {
+            fetch("http://localhost:3001/api/tasks", {
+                // mode: "no-cors"
+                method: "POST",
+                body: JSON.stringify(newTask),
+                headers: {
+                    "Content-Type": "application/json",
+                    "token": token
+                }
+            })
+
+            fetch("http://localhost:3001/api/tasks", {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+                "token": token
+            }
+            })
+                .then(response => response.json())
+                .then(data => { setTasks(data.tasks); console.log(data); })
+
+        } catch (error) {
+            console.log(error);
         }
 
         setTasks(produce(tasks, draft => {
             draft.push(newTask);
         }));
-
-        fetch("https://demo2.z-bit.ee/tasks", {
-            method: "POST",
-            body: JSON.stringify(newTask),
-            headers: {
-                "Content-Type": "application/json",
-                'Authorization': 'Bearer ' + token
-            }
-        });
     };
 
     const handleDeleteTask = (task) => {
+        fetch("http://localhost:3001/api/tasks", {
+            method: "DELETE",
+            body: JSON.stringify(task),
+            headers: {
+                "Content-Type": "application/json",
+                "token": token
+            }
+        })
+
         setTasks(produce(tasks, draft => {
             const index = draft.findIndex(t => t.id === task.id);
             draft.splice(index, 1);
+        }));
+    };
+
+    const handleTaskCompleted = (task, event) => {
+        setTasks(produce(tasks, draft => {
+            const index = draft.findIndex(t => t.id === task.id);
+            draft[index].completed = !draft[index].completed;
+        }));
+    };
+
+    const handleTaskTitle = (task, event) => {
+        setTasks(produce(tasks, draft => {
+            const index = draft.findIndex(t => t.id === task.id);
+            draft[index].task = event.target.value;
         }));
     };
 
@@ -110,11 +127,11 @@ export default function TaskList() {
                     renderItem={(task) => <List.Item key={task.id}>
                         <Row type="flex" justify="space-between" align="middle" style={{ width: '100%' }}>
                             <Space>
-                                <Checkbox checked={task.marked_as_done} onChange={(e) => handleMarkedAsDoneChange(task, e)} />
-                                <Input value={task.title} onChange={(event) => handleNameChange(task, event)} />
+                                <Checkbox defaultChecked={task.completed} name="completed" id="completed" onChange={(e) => handleTaskCompleted(task, e)} />
+                                <Input type="text" name="task" id="task" defaultValue={task.task} onChange={(e) => handleTaskTitle(task, e)}/>
                             </Space>
-                            <Button type="text" onClick={() => handleNameChange(task)}>save</Button>
-                            <Button type="text" onClick={() => handleDeleteTask(task)}><DeleteOutlined /></Button>
+                            <Button type="text" onClick={(e) => handleSaveTask(task, e)}>save</Button>
+                            <Button type="text" onClick={(e) => handleDeleteTask(task, e)}><DeleteOutlined /></Button>
                         </Row>
                     </List.Item>}
                 />

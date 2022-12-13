@@ -1,14 +1,14 @@
-import { Form, Input, Button, Row, Col, notification } from "antd";
+import { Form, Input, Button, Row, Col, notification} from "antd";
 import { useNavigate } from "react-router";
 
-export default function Login() {
+export default function Register() {
     const navigate = useNavigate();
 
     // Handle form submission
 
     const onFinish = (values) => {
         console.log('Success:', values);
-        fetch("http://localhost:3001/login", {
+        fetch("http://localhost:3001/register", {
             method: "POST",
             body: JSON.stringify(values),
             headers: {
@@ -17,28 +17,21 @@ export default function Login() {
         })
         .then(response => response.json())
         .then(data => {
-            if (data.status === "Username or password is incorrect") {
-                notification.error({
-                    message: 'Invalid username or password'
-                });
+            if (data.status !== "Username already exists") {
+                notification.success({ message: 'Registered' });
+                navigate("/login");
             }
-            if (data.session.token) {
-                localStorage.setItem("token", data.session.token);
-                notification.success({
-                    message: 'Logged in'
-                });
-                navigate("/");
-            } 
+            notification.error({
+                message: 'Username already exists'
+            });
         }
-
-
     )}
 
     return (
         <Row type="flex" justify="center" align="middle" style={{minHeight: '100vh'}}>
             <Col span={4}>
-                <h1>Login</h1>
-                <Button type="text" onClick={() => navigate("/register")}>Register</Button>
+                <h1>Register</h1>
+                <Button type="text" onClick={() => navigate("/login")}>Back</Button>
                 <Form
                     name="basic"
                     layout="vertical"
@@ -60,7 +53,7 @@ export default function Login() {
                         <Input.Password />
                     </Form.Item>
                     <Form.Item>
-                        <Button type="primary" htmlType="submit">Login</Button>
+                        <Button type="primary" htmlType="submit">Submit</Button>
                     </Form.Item>
                 </Form>
             </Col>
